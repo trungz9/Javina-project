@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import db from './config/db.js';  // nhớ có .js ở cuối
+import authRoute from './src/routes/auth.route.js';
 
 dotenv.config();
 
@@ -9,6 +10,8 @@ const app = express();
 
 app.use(cors({ origin: 'http://localhost:5173' }));
 app.use(express.json());
+
+app.use('/api/auth', authRoute);
 
 app.get('/', (req, res) => {
   res.json({ message: '🛒 Javina Shop API đang chạy!' });
