@@ -2,6 +2,9 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import db from '../../config/db.js';
 
+import dotenv from 'dotenv';
+dotenv.config();
+
 // Tạo JWT token
 const signToken = (id) => jwt.sign(
   { id },
