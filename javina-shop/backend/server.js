@@ -7,11 +7,13 @@ import productRoute from './src/routes/product.route.js';
 import categoryRoute from './src/routes/category.route.js';
 import cartRoute  from './src/routes/cart.route.js';
 import orderRoute from './src/routes/order.route.js';
+import shopRoute from './src/routes/shop.route.js';
 
 dotenv.config();
 
 const app = express();
 
+app.use('/api/shop', shopRoute);
 app.use(cors({ origin: 'http://localhost:5173' }));
 app.use(express.json());
 app.use('/api/auth', authRoute);
