@@ -5,6 +5,8 @@ import db from './config/db.js';  // nhớ có .js ở cuối
 import authRoute from './src/routes/auth.route.js';
 import productRoute from './src/routes/product.route.js'; 
 import categoryRoute from './src/routes/category.route.js';
+import cartRoute  from './src/routes/cart.route.js';
+import orderRoute from './src/routes/order.route.js';
 
 dotenv.config();
 
@@ -12,10 +14,11 @@ const app = express();
 
 app.use(cors({ origin: 'http://localhost:5173' }));
 app.use(express.json());
-
 app.use('/api/auth', authRoute);
 app.use('/api/products', productRoute);
 app.use('/api/categories', categoryRoute);
+app.use('/api/cart',   cartRoute);
+app.use('/api/orders', orderRoute);
 
 app.get('/', (req, res) => {
   res.json({ message: '🛒 Javina Shop API đang chạy!' });
