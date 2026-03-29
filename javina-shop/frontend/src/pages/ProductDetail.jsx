@@ -3,9 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
 
+const CONDITION_LABEL = {
+  new:'Mới', like_new:'Như mới', used:'Đã dùng', for_rent:'Cho thuê'
+}
+
 export default function ProductDetail() {
-  const { id }       = useParams()
-  const navigate     = useNavigate()
+  const { id }         = useParams()
+  const navigate       = useNavigate()
   const { isLoggedIn } = useAuth()
   const [product, setProduct]   = useState(null)
   const [loading, setLoading]   = useState(true)
@@ -36,164 +40,115 @@ export default function ProductDetail() {
     }
   }
 
-  const handleBuyNow = async () => {
-    if (!isLoggedIn) return navigate('/login')
-    await handleAddToCart()
-    navigate('/cart')
-  }
-
-  if (loading) return (
-    <div className="flex justify-center items-center min-h-screen">
-      <p className="text-gray-500">Đang tải sản phẩm...</p>
-    </div>
-  )
-
-  if (error) return (
-    <div className="flex justify-center items-center min-h-screen">
-      <p className="text-red-500">{error}</p>
-    </div>
-  )
+  if (loading) return <div className="loading-center">Đang tải sản phẩm... 🌸</div>
+  if (error)   return <div className="loading-center" style={{ color: '#E05555' }}>{error}</div>
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
+    <div className="detail-page">
+      <button onClick={() => navigate(-1)} className="detail-back">← Quay lại</button>
 
-      {/* Nút quay lại */}
-      <button
-        onClick={() => navigate(-1)}
-        className="text-sm text-gray-500 hover:text-orange-500 mb-6 flex items-center gap-1"
-      >
-        ← Quay lại
-      </button>
+      <div className="detail-card flex gap-24" style={{ flexWrap: 'wrap' }}>
 
-      <div className="bg-white rounded-2xl shadow p-6 flex flex-col md:flex-row gap-8">
-
-        {/* ── Cột trái: Ảnh ── */}
-        <div className="md:w-1/2">
+        {/* Ảnh */}
+        <div style={{ flex: '1 1 300px' }}>
           <img
-            src={mainImg || 'https://placehold.co/500x400?text=No+Image'}
-            alt={product.name}
-            className="w-full h-80 object-cover rounded-xl"
+            src={mainImg || 'https://placehold.co/500x400?text=🌸'}
+            alt={product.name} className="detail-img-main"
           />
-          {/* Ảnh phụ */}
           {product.images?.length > 1 && (
-            <div className="flex gap-2 mt-3 overflow-x-auto">
+            <div className="detail-img-list">
               {product.images.map(img => (
-                <img
-                  key={img.id}
-                  src={img.image_url}
-                  alt=""
+                <img key={img.id} src={img.image_url} alt=""
                   onClick={() => setMainImg(img.image_url)}
-                  className={`w-16 h-16 object-cover rounded-lg cursor-pointer border-2
-                    ${mainImg === img.image_url ? 'border-orange-400' : 'border-transparent'}`}
+                  className={`detail-img-thumb ${mainImg === img.image_url ? 'active' : ''}`}
                 />
               ))}
             </div>
           )}
         </div>
 
-        {/* ── Cột phải: Thông tin ── */}
-        <div className="md:w-1/2 flex flex-col gap-4">
-
-          {/* Tên & danh mục */}
+        {/* Thông tin */}
+        <div style={{ flex: '1 1 280px' }} className="flex-col gap-16">
           <div>
-            <span className="text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded-full">
-              {product.category_name}
-            </span>
-            <h1 className="text-xl font-bold mt-2">{product.name}</h1>
+            <span className="detail-cat-badge">{product.category_name}</span>
+            <h1 className="detail-title">{product.name}</h1>
           </div>
 
-          {/* Giá */}
-          <div className="flex items-center gap-3">
-            <span className="text-3xl font-bold text-orange-500">
+          <div className="flex" style={{ alignItems: 'center' }}>
+            <span className="detail-price">
               {Number(product.final_price).toLocaleString('vi-VN')}đ
             </span>
             {product.discount_pct > 0 && (
               <>
-                <span className="text-gray-400 line-through text-sm">
+                <span className="detail-price-old">
                   {Number(product.base_price).toLocaleString('vi-VN')}đ
                 </span>
-                <span className="bg-red-100 text-red-500 text-xs px-2 py-0.5 rounded-full">
+                <span className="badge badge-red" style={{ marginLeft: 8 }}>
                   -{product.discount_pct}%
                 </span>
               </>
             )}
           </div>
 
-          {/* Thông tin nhanh */}
-          <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
-            <div>Tình trạng: <span className="font-medium">
-              {{ new: 'Mới', like_new: 'Như mới', used: 'Đã dùng', for_rent: 'Cho thuê' }
-                [product.condition_type]}
-            </span></div>
-            <div>Còn lại: <span className="font-medium">{product.stock_qty} cái</span></div>
-            <div>Đã bán: <span className="font-medium">{product.sold_qty}</span></div>
-            <div>Lượt xem: <span className="font-medium">{product.view_count}</span></div>
+          <div className="detail-info-grid">
+            <div>Tình trạng: <strong>{CONDITION_LABEL[product.condition_type]}</strong></div>
+            <div>Còn lại: <strong>{product.stock_qty} cái</strong></div>
+            <div>Đã bán: <strong>{product.sold_qty}</strong></div>
+            <div>Lượt xem: <strong>{product.view_count}</strong></div>
             {product.is_negotiable === 1 && (
-              <div className="col-span-2 text-green-600 font-medium">
-                Có thể thương lượng giá
+              <div className="badge badge-matcha" style={{ gridColumn: 'span 2' }}>
+                ✓ Có thể thương lượng giá
               </div>
             )}
           </div>
 
           {/* Shop */}
-          <div className="bg-gray-50 rounded-xl p-3 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-orange-200 flex items-center justify-center font-bold text-orange-600">
+          <div className="detail-shop-card">
+            <div className="detail-shop-avatar">
               {product.shop_name?.[0]}
             </div>
             <div>
-              <p className="font-medium text-sm">{product.shop_name}</p>
-              <p className="text-xs text-gray-400">
+              <p className="font-medium">{product.shop_name}</p>
+              <p className="text-gray text-xs">
                 {product.shop_rating > 0 ? `⭐ ${product.shop_rating}` : 'Chưa có đánh giá'}
               </p>
             </div>
           </div>
 
           {/* Số lượng */}
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-600">Số lượng:</span>
-            <div className="flex items-center border rounded-lg overflow-hidden">
-              <button
-                onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-lg"
-              >−</button>
-              <span className="px-4 py-1 text-sm font-medium">{quantity}</span>
-              <button
-                onClick={() => setQuantity(q => Math.min(product.stock_qty, q + 1))}
-                className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-lg"
-              >+</button>
+          <div className="flex gap-12" style={{ alignItems: 'center' }}>
+            <span className="text-gray text-sm">Số lượng:</span>
+            <div className="detail-qty-control">
+              <button className="detail-qty-btn"
+                onClick={() => setQuantity(q => Math.max(1, q - 1))}>−</button>
+              <span className="detail-qty-num">{quantity}</span>
+              <button className="detail-qty-btn"
+                onClick={() => setQuantity(q => Math.min(product.stock_qty, q + 1))}>+</button>
             </div>
           </div>
 
-          {/* Nút hành động */}
-          <div className="flex gap-3 mt-2">
-            <button
-              onClick={handleAddToCart}
-              className="flex-1 border-2 border-orange-500 text-orange-500 font-semibold py-2 rounded-xl hover:bg-orange-50 transition"
-            >
-              {added ? '✓ Đã thêm!' : 'Thêm vào giỏ'}
+          {/* Actions */}
+          <div className="detail-actions">
+            <button onClick={handleAddToCart} className="btn btn-secondary flex-1">
+              {added ? '✓ Đã thêm!' : '🛒 Thêm vào giỏ'}
             </button>
             <button
-              onClick={handleBuyNow}
+              onClick={() => { handleAddToCart(); navigate('/cart') }}
               disabled={product.stock_qty === 0}
-              className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-xl transition disabled:opacity-50"
-            >
-              {product.stock_qty === 0 ? 'Hết hàng' : 'Mua ngay'}
+              className="btn btn-primary flex-1">
+              {product.stock_qty === 0 ? 'Hết hàng' : '⚡ Mua ngay'}
             </button>
           </div>
-
         </div>
       </div>
 
-      {/* Mô tả sản phẩm */}
+      {/* Mô tả */}
       {product.description && (
-        <div className="bg-white rounded-2xl shadow p-6 mt-6">
-          <h2 className="text-lg font-bold mb-3">Mô tả sản phẩm</h2>
-          <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">
-            {product.description}
-          </p>
+        <div className="detail-desc-card">
+          <h2 className="detail-desc-title">Mô tả sản phẩm</h2>
+          <p className="detail-desc-body">{product.description}</p>
         </div>
       )}
-
     </div>
   )
 }

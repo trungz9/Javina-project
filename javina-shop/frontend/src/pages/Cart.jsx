@@ -4,8 +4,8 @@ import api from '../api/axios'
 
 export default function Cart() {
   const navigate = useNavigate()
-  const [items, setItems]   = useState([])
-  const [total, setTotal]   = useState(0)
+  const [items, setItems]     = useState([])
+  const [total, setTotal]     = useState(0)
   const [loading, setLoading] = useState(true)
 
   const fetchCart = () => {
@@ -14,98 +14,77 @@ export default function Cart() {
       .catch(console.error)
       .finally(() => setLoading(false))
   }
-
   useEffect(() => { fetchCart() }, [])
 
-  const updateQty = async (id, quantity) => {
-    await api.put(`/cart/${id}`, { quantity })
-    fetchCart()
-  }
+  const updateQty   = async (id, qty) => { await api.put(`/cart/${id}`, { quantity: qty }); fetchCart() }
+  const removeItem  = async (id)      => { await api.delete(`/cart/${id}`); fetchCart() }
 
-  const removeItem = async (id) => {
-    await api.delete(`/cart/${id}`)
-    fetchCart()
-  }
-
-  if (loading) return <p className="text-center mt-20">Đang tải giỏ hàng...</p>
+  if (loading) return <div className="loading-center">Đang tải giỏ hàng... 🛒</div>
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Giỏ hàng ({items.length})</h1>
+    <div className="cart-page">
+      <h1 className="cart-title">🛒 Giỏ hàng ({items.length})</h1>
 
       {items.length === 0 ? (
-        <div className="text-center py-20">
-          <p className="text-gray-400 mb-4">Giỏ hàng trống!</p>
-          <Link to="/" className="bg-orange-500 text-white px-6 py-2 rounded-xl">
-            Tiếp tục mua sắm
-          </Link>
+        <div className="empty-state">
+          <div className="empty-state-icon">🛒</div>
+          <p className="empty-state-text">Giỏ hàng trống!</p>
+          <Link to="/" className="btn btn-primary">Tiếp tục mua sắm</Link>
         </div>
       ) : (
-        <div className="flex flex-col lg:flex-row gap-6">
+        <div className="flex gap-24" style={{ flexWrap: 'wrap', alignItems: 'flex-start' }}>
 
-          {/* Danh sách sản phẩm */}
-          <div className="flex-1 space-y-4">
+          {/* Items */}
+          <div className="flex-1 flex-col gap-16" style={{ minWidth: 280 }}>
             {items.map(item => (
-              <div key={item.id} className="bg-white rounded-xl shadow p-4 flex gap-4">
+              <div key={item.id} className="cart-item">
                 <img
-                  src={item.cover_image || 'https://placehold.co/100x100?text=SP'}
-                  alt={item.name}
-                  className="w-20 h-20 object-cover rounded-lg"
+                  src={item.cover_image || 'https://placehold.co/100x100?text=🌸'}
+                  alt={item.name} className="cart-item-img"
                 />
                 <div className="flex-1">
-                  <p className="font-medium text-sm line-clamp-2">{item.name}</p>
-                  <p className="text-xs text-gray-400 mt-1">{item.shop_name}</p>
-                  <p className="text-orange-500 font-bold mt-1">
+                  <p className="cart-item-name line-clamp-2">{item.name}</p>
+                  <p className="cart-item-shop">🏪 {item.shop_name}</p>
+                  <p className="cart-item-price">
                     {Number(item.final_price).toLocaleString('vi-VN')}đ
                   </p>
                 </div>
-                <div className="flex flex-col items-end justify-between">
-                  {/* Điều chỉnh số lượng */}
-                  <div className="flex items-center border rounded-lg overflow-hidden">
-                    <button
-                      onClick={() => updateQty(item.id, item.quantity - 1)}
-                      className="px-2 py-1 bg-gray-100 hover:bg-gray-200"
-                    >−</button>
-                    <span className="px-3 text-sm">{item.quantity}</span>
-                    <button
-                      onClick={() => updateQty(item.id, item.quantity + 1)}
-                      className="px-2 py-1 bg-gray-100 hover:bg-gray-200"
-                    >+</button>
+                <div className="flex-col" style={{ alignItems: 'flex-end', gap: 8 }}>
+                  <div className="cart-item-qty">
+                    <button className="cart-item-qty-btn"
+                      onClick={() => updateQty(item.id, item.quantity - 1)}>−</button>
+                    <span className="cart-item-qty-num">{item.quantity}</span>
+                    <button className="cart-item-qty-btn"
+                      onClick={() => updateQty(item.id, item.quantity + 1)}>+</button>
                   </div>
-                  <button
-                    onClick={() => removeItem(item.id)}
-                    className="text-xs text-red-400 hover:text-red-600 mt-2"
-                  >Xoá</button>
+                  <button className="cart-item-remove"
+                    onClick={() => removeItem(item.id)}>Xoá</button>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Tổng tiền */}
-          <div className="lg:w-72">
-            <div className="bg-white rounded-xl shadow p-5 sticky top-4">
-              <h2 className="font-bold text-lg mb-4">Tổng đơn hàng</h2>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-gray-500">Tạm tính:</span>
-                <span>{Number(total).toLocaleString('vi-VN')}đ</span>
-              </div>
-              <div className="flex justify-between text-sm mb-4">
-                <span className="text-gray-500">Phí ship:</span>
-                <span className="text-green-500">Miễn phí</span>
-              </div>
-              <div className="border-t pt-3 flex justify-between font-bold">
-                <span>Tổng cộng:</span>
-                <span className="text-orange-500 text-lg">
-                  {Number(total).toLocaleString('vi-VN')}đ
-                </span>
-              </div>
-              <button
-                onClick={() => navigate('/checkout')}
-                className="w-full mt-4 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 rounded-xl transition"
-              >
-                Thanh toán
-              </button>
+          {/* Summary */}
+          <div className="cart-summary" style={{ width: 280 }}>
+            <h2 className="cart-summary-title">Tổng đơn hàng</h2>
+            <div className="cart-summary-row">
+              <span className="cart-summary-label">Tạm tính:</span>
+              <span>{Number(total).toLocaleString('vi-VN')}đ</span>
             </div>
+            <div className="cart-summary-row">
+              <span className="cart-summary-label">Phí ship:</span>
+              <span className="cart-summary-free">Miễn phí</span>
+            </div>
+            <div className="cart-summary-total">
+              <span>Tổng cộng:</span>
+              <span className="cart-summary-amount">
+                {Number(total).toLocaleString('vi-VN')}đ
+              </span>
+            </div>
+            <button onClick={() => navigate('/checkout')}
+              className="btn btn-primary btn-full mt-16">
+              🌸 Thanh toán
+            </button>
           </div>
 
         </div>

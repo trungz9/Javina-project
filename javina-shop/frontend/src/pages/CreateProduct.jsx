@@ -10,40 +10,27 @@ export default function CreateProduct() {
   const [loading, setLoading]       = useState(false)
   const [error, setError]           = useState('')
   const [form, setForm] = useState({
-    name:           '',
-    description:    '',
-    category_id:    '',
-    base_price:     '',
-    discount_pct:   0,
-    stock_qty:      1,
-    condition_type: 'used',
-    is_negotiable:  0,
+    name:'', description:'', category_id:'',
+    base_price:'', discount_pct:0,
+    stock_qty:1, condition_type:'used', is_negotiable:0,
   })
 
-  // Chưa đăng nhập → redirect login
-  useEffect(() => {
-    if (!isLoggedIn) navigate('/login')
-  }, [isLoggedIn])
+  useEffect(() => { if (!isLoggedIn) navigate('/login') }, [isLoggedIn])
 
-  // Lấy danh sách danh mục
   useEffect(() => {
     api.get('/categories')
       .then(res => setCategories(res.data.categories))
-      .catch(() => setCategories([]))
+      .catch(() => {})
   }, [])
 
   const handleChange = e => {
     const { name, value, type, checked } = e.target
-    setForm(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? (checked ? 1 : 0) : value
-    }))
+    setForm(prev => ({ ...prev, [name]: type === 'checkbox' ? (checked ? 1 : 0) : value }))
   }
 
   const handleSubmit = async e => {
     e.preventDefault()
-    setLoading(true)
-    setError('')
+    setLoading(true); setError('')
     try {
       const res = await api.post('/products', {
         ...form,
@@ -56,55 +43,37 @@ export default function CreateProduct() {
       navigate(`/products/${res.data.productId}`)
     } catch (err) {
       setError(err.response?.data?.message || 'Đăng sản phẩm thất bại!')
-    } finally {
-      setLoading(false)
-    }
+    } finally { setLoading(false) }
   }
 
+  const finalPrice = form.base_price
+    ? Math.round(form.base_price * (100 - form.discount_pct) / 100)
+    : 0
+
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
+    <div className="create-page">
+      <button onClick={() => navigate(-1)} className="detail-back">← Quay lại</button>
 
-      <button
-        onClick={() => navigate(-1)}
-        className="text-sm text-gray-500 hover:text-orange-500 mb-6"
-      >
-        ← Quay lại
-      </button>
+      <div className="create-card">
+        <h1 className="create-title">🌸 Đăng bán sản phẩm</h1>
 
-      <div className="bg-white rounded-2xl shadow p-6">
-        <h1 className="text-2xl font-bold mb-6">Đăng bán sản phẩm</h1>
+        {error && <div className="alert alert-error">{error}</div>}
 
-        {error && (
-          <p className="text-red-500 text-sm mb-4 bg-red-50 px-4 py-2 rounded-lg">
-            {error}
-          </p>
-        )}
+        <form onSubmit={handleSubmit}>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-
-          {/* Tên sản phẩm */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Tên sản phẩm *
-            </label>
-            <input
-              type="text" name="name" value={form.name}
-              onChange={handleChange} required
-              placeholder="VD: Sách Giải Tích 1 - Nguyễn Đình Trí"
-              className="w-full border rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
-            />
+          {/* Tên */}
+          <div className="form-group">
+            <label className="form-label">Tên sản phẩm *</label>
+            <input name="name" value={form.name} onChange={handleChange}
+              required placeholder="VD: Sách Giải Tích 1"
+              className="form-input"/>
           </div>
 
           {/* Danh mục */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Danh mục *
-            </label>
-            <select
-              name="category_id" value={form.category_id}
-              onChange={handleChange} required
-              className="w-full border rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
-            >
+          <div className="form-group">
+            <label className="form-label">Danh mục *</label>
+            <select name="category_id" value={form.category_id}
+              onChange={handleChange} required className="form-select">
               <option value="">-- Chọn danh mục --</option>
               {categories.map(c => (
                 <option key={c.id} value={c.id}>{c.name}</option>
@@ -112,52 +81,34 @@ export default function CreateProduct() {
             </select>
           </div>
 
-          {/* Giá & Giảm giá */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Giá bán (VNĐ) *
-              </label>
-              <input
-                type="number" name="base_price" value={form.base_price}
-                onChange={handleChange} required min="0"
-                placeholder="50000"
-                className="w-full border rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
-              />
+          {/* Giá */}
+          <div className="grid-2">
+            <div className="form-group">
+              <label className="form-label">Giá bán (VNĐ) *</label>
+              <input name="base_price" type="number" min="0"
+                value={form.base_price} onChange={handleChange}
+                required placeholder="50000" className="form-input"/>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Giảm giá (%)
-              </label>
-              <input
-                type="number" name="discount_pct" value={form.discount_pct}
-                onChange={handleChange} min="0" max="100"
-                className="w-full border rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
-              />
+            <div className="form-group">
+              <label className="form-label">Giảm giá (%)</label>
+              <input name="discount_pct" type="number" min="0" max="100"
+                value={form.discount_pct} onChange={handleChange}
+                className="form-input"/>
             </div>
           </div>
 
           {/* Số lượng & Tình trạng */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Số lượng *
-              </label>
-              <input
-                type="number" name="stock_qty" value={form.stock_qty}
-                onChange={handleChange} required min="1"
-                className="w-full border rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
-              />
+          <div className="grid-2">
+            <div className="form-group">
+              <label className="form-label">Số lượng *</label>
+              <input name="stock_qty" type="number" min="1"
+                value={form.stock_qty} onChange={handleChange}
+                required className="form-input"/>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tình trạng *
-              </label>
-              <select
-                name="condition_type" value={form.condition_type}
-                onChange={handleChange}
-                className="w-full border rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
-              >
+            <div className="form-group">
+              <label className="form-label">Tình trạng *</label>
+              <select name="condition_type" value={form.condition_type}
+                onChange={handleChange} className="form-select">
                 <option value="new">Mới</option>
                 <option value="like_new">Như mới</option>
                 <option value="used">Đã qua sử dụng</option>
@@ -167,56 +118,42 @@ export default function CreateProduct() {
           </div>
 
           {/* Mô tả */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Mô tả sản phẩm
-            </label>
-            <textarea
-              name="description" value={form.description}
+          <div className="form-group">
+            <label className="form-label">Mô tả sản phẩm</label>
+            <textarea name="description" value={form.description}
               onChange={handleChange} rows={4}
               placeholder="Mô tả chi tiết tình trạng, xuất xứ, lý do bán..."
-              className="w-full border rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
-            />
+              className="form-textarea"/>
           </div>
 
           {/* Thương lượng */}
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox" name="is_negotiable"
+          <label className="flex gap-8 mb-16" style={{ alignItems: 'center', cursor: 'pointer' }}>
+            <input type="checkbox" name="is_negotiable"
               checked={form.is_negotiable === 1}
               onChange={handleChange}
-              className="w-4 h-4 accent-orange-500"
+              style={{ width: 16, height: 16, accentColor: 'var(--sakura-dark)' }}
             />
-            <span className="text-sm text-gray-700">Cho phép thương lượng giá</span>
+            <span className="text-sm">Cho phép thương lượng giá</span>
           </label>
 
-          {/* Giá preview */}
+          {/* Preview giá */}
           {form.base_price > 0 && (
-            <div className="bg-orange-50 rounded-xl p-4 text-sm">
-              <p className="text-gray-600">Giá gốc:
-                <span className="font-medium ml-1">
-                  {Number(form.base_price).toLocaleString('vi-VN')}đ
-                </span>
+            <div className="price-preview mb-16">
+              <p className="text-sm text-gray">
+                Giá gốc: <strong>{Number(form.base_price).toLocaleString('vi-VN')}đ</strong>
               </p>
               {form.discount_pct > 0 && (
-                <p className="text-orange-600 font-bold mt-1">Giá sau giảm:
-                  <span className="ml-1">
-                    {Math.round(form.base_price * (100 - form.discount_pct) / 100)
-                      .toLocaleString('vi-VN')}đ
-                  </span>
+                <p className="price-preview-final">
+                  Giá sau giảm: {finalPrice.toLocaleString('vi-VN')}đ
                 </p>
               )}
             </div>
           )}
 
-          {/* Submit */}
-          <button
-            type="submit" disabled={loading}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 rounded-xl transition disabled:opacity-50"
-          >
-            {loading ? 'Đang đăng...' : 'Đăng bán ngay'}
+          <button type="submit" disabled={loading}
+            className="btn btn-primary btn-full btn-lg">
+            {loading ? 'Đang đăng...' : '🌸 Đăng bán ngay'}
           </button>
-
         </form>
       </div>
     </div>

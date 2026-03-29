@@ -1,141 +1,117 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import api from '../api/axios'
 
-const STATUS_NEXT = {
-  pending:   { next: 'confirmed', label: 'Xác nhận đơn'  },
-  confirmed: { next: 'preparing', label: 'Bắt đầu đóng gói' },
-  preparing: { next: 'shipping',  label: 'Giao cho ship'  },
-  shipping:  { next: 'delivered', label: 'Xác nhận đã giao' },
-  delivered: { next: 'completed', label: 'Hoàn thành'     },
+const STATUS_FLOW = {
+  pending:   { next:'confirmed', label:'Chờ xác nhận',   cls:'status-pending'   },
+  confirmed: { next:'preparing', label:'Đã xác nhận',    cls:'status-confirmed' },
+  preparing: { next:'shipping',  label:'Đang đóng gói',  cls:'status-preparing' },
+  shipping:  { next:'delivered', label:'Đang giao',      cls:'status-shipping'  },
+  delivered: { next:'completed', label:'Đã nhận',        cls:'status-delivered' },
+  completed: { next: null,       label:'Hoàn thành',     cls:'status-completed' },
+  cancelled: { next: null,       label:'Đã huỷ',         cls:'status-cancelled' },
 }
 
-const STATUS_COLOR = {
-  pending:   'bg-yellow-100 text-yellow-600',
-  confirmed: 'bg-blue-100 text-blue-600',
-  preparing: 'bg-purple-100 text-purple-600',
-  shipping:  'bg-indigo-100 text-indigo-600',
-  delivered: 'bg-teal-100 text-teal-600',
-  completed: 'bg-green-100 text-green-600',
-  cancelled: 'bg-red-100 text-red-500',
+const NEXT_LABEL = {
+  confirmed:'Xác nhận đơn', preparing:'Bắt đầu đóng gói',
+  shipping:'Giao cho ship',  delivered:'Xác nhận đã giao',
+  completed:'Hoàn thành',
 }
 
-const STATUS_LABEL = {
-  pending:   'Chờ xác nhận',
-  confirmed: 'Đã xác nhận',
-  preparing: 'Đang đóng gói',
-  shipping:  'Đang giao',
-  delivered: 'Đã giao',
-  completed: 'Hoàn thành',
-  cancelled: 'Đã huỷ',
-}
+const TABS = [
+  { value:'',          label:'Tất cả'       },
+  { value:'pending',   label:'Chờ xác nhận' },
+  { value:'confirmed', label:'Đã xác nhận'  },
+  { value:'preparing', label:'Đóng gói'     },
+  { value:'shipping',  label:'Đang giao'    },
+  { value:'completed', label:'Hoàn thành'   },
+  { value:'cancelled', label:'Đã huỷ'       },
+]
 
 export default function ManageOrders() {
-  const [orders, setOrders]     = useState([])
-  const [filter, setFilter]     = useState('')
-  const [loading, setLoading]   = useState(true)
-  const [updating, setUpdating] = useState(null)
+  const [searchParams]        = useSearchParams()
+  const [orders, setOrders]   = useState([])
+  const [loading, setLoading] = useState(true)
+  const [filter, setFilter]   = useState(searchParams.get('status') || '')
 
-  const fetchOrders = (status = '') => {
-    setLoading(true)
-    api.get(`/shop/orders${status ? `?status=${status}` : ''}`)
+  const fetchOrders = () => {
+    const url = filter ? `/shops/my/orders?status=${filter}` : '/shops/my/orders'
+    api.get(url)
       .then(res => setOrders(res.data.orders))
       .catch(console.error)
       .finally(() => setLoading(false))
   }
+  useEffect(() => { fetchOrders() }, [filter])
 
-  useEffect(() => { fetchOrders(filter) }, [filter])
-
-  const handleUpdateStatus = async (id, nextStatus) => {
-    setUpdating(id)
+  const handleUpdate = async (id, next) => {
+    if (!confirm(`Chuyển sang: "${NEXT_LABEL[next]}"?`)) return
     try {
-      await api.put(`/shop/orders/${id}`, { status: nextStatus })
-      setOrders(prev => prev.map(o =>
-        o.id === id ? { ...o, status: nextStatus } : o
-      ))
+      await api.put(`/shops/my/orders/${id}`, { status: next })
+      fetchOrders()
     } catch (err) {
       alert(err.response?.data?.message || 'Cập nhật thất bại!')
-    } finally {
-      setUpdating(null)
     }
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Quản lý đơn hàng</h1>
+    <div className="page-medium">
+      <h1 className="font-jp text-xl font-bold mb-24">🧾 Quản lý đơn hàng</h1>
 
-      {/* Filter tabs */}
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-        {[
-          { value: '',          label: 'Tất cả'       },
-          { value: 'pending',   label: 'Chờ xác nhận' },
-          { value: 'confirmed', label: 'Đã xác nhận'  },
-          { value: 'preparing', label: 'Đóng gói'     },
-          { value: 'shipping',  label: 'Đang giao'    },
-          { value: 'completed', label: 'Hoàn thành'   },
-          { value: 'cancelled', label: 'Đã huỷ'       },
-        ].map(tab => (
-          <button key={tab.value}
-            onClick={() => setFilter(tab.value)}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition
-              ${filter === tab.value
-                ? 'bg-orange-500 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-          >
+      {/* Tabs */}
+      <div className="status-tabs">
+        {TABS.map(tab => (
+          <button key={tab.value} onClick={() => setFilter(tab.value)}
+            className={`status-tab ${filter === tab.value ? 'status-tab-active' : 'status-tab-inactive'}`}>
             {tab.label}
           </button>
         ))}
       </div>
 
       {loading ? (
-        <p className="text-center py-20 text-gray-400">Đang tải...</p>
+        <div className="loading-center">Đang tải...</div>
       ) : orders.length === 0 ? (
-        <p className="text-center py-20 text-gray-400">Không có đơn hàng nào!</p>
+        <div className="empty-state">
+          <div className="empty-state-icon">🧾</div>
+          <p className="empty-state-text">Không có đơn hàng nào!</p>
+        </div>
       ) : (
-        <div className="space-y-4">
-          {orders.map(order => (
-            <div key={order.id} className="bg-white rounded-xl shadow p-5">
-
-              {/* Header đơn hàng */}
-              <div className="flex justify-between items-start mb-3">
-                <div>
-                  <p className="font-bold text-base">{order.order_code}</p>
-                  <p className="text-sm text-gray-500 mt-0.5">
-                    {order.buyer_name} — {order.buyer_phone}
-                  </p>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    {order.address}, {order.ward}, {order.district}, {order.province}
-                  </p>
+        <div className="flex-col gap-16">
+          {orders.map(order => {
+            const s = STATUS_FLOW[order.status] || {}
+            return (
+              <div key={order.id} className="order-card">
+                <div className="order-card-header">
+                  <div>
+                    <p className="order-code">{order.order_code}</p>
+                    <p className="order-shop">{order.buyer_name} — {order.buyer_phone}</p>
+                    <p className="text-xs text-gray mt-4">
+                      {order.address}, {order.ward}, {order.district}, {order.province}
+                    </p>
+                  </div>
+                  <span className={`order-status badge ${s.cls}`}>{s.label}</span>
                 </div>
-                <span className={`text-xs px-3 py-1 rounded-full font-medium ${STATUS_COLOR[order.status]}`}>
-                  {STATUS_LABEL[order.status]}
-                </span>
-              </div>
 
-              {/* Thông tin đơn */}
-              <div className="flex justify-between items-center text-sm border-t pt-3">
-                <div className="text-gray-500">
-                  <span>{order.item_count} sản phẩm</span>
-                  {order.note && (
-                    <span className="ml-3 italic">"{order.note}"</span>
+                <div className="order-footer">
+                  <div className="text-sm text-gray">
+                    {order.item_count} sản phẩm •
+                    <span className="order-amount" style={{ marginLeft: 6 }}>
+                      {Number(order.total_amount).toLocaleString('vi-VN')}đ
+                    </span>
+                  </div>
+                  {s.next && (
+                    <button onClick={() => handleUpdate(order.id, s.next)}
+                      className="btn btn-primary btn-sm">
+                      {NEXT_LABEL[s.next]}
+                    </button>
                   )}
                 </div>
-                <p className="font-bold text-orange-500 text-base">
-                  {Number(order.total_amount).toLocaleString('vi-VN')}đ
-                </p>
-              </div>
 
-              {/* Nút cập nhật trạng thái */}
-              {STATUS_NEXT[order.status] && (
-                <button
-                  onClick={() => handleUpdateStatus(order.id, STATUS_NEXT[order.status].next)}
-                  disabled={updating === order.id}
-                  className="mt-3 w-full bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold py-2 rounded-xl transition disabled:opacity-50"
-                >
-                  {updating === order.id ? 'Đang cập nhật...' : STATUS_NEXT[order.status].label}
-                </button>
-              )}
-            </div>
-          ))}
+                {order.note && (
+                  <div className="order-note">Ghi chú: {order.note}</div>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
     </div>
