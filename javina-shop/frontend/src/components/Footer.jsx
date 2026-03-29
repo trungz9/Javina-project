@@ -9,7 +9,7 @@ export default function Footer() {
           <div>
             <div className="footer-logo">🌸 Javina Shop</div>
             <p className="footer-desc">
-              Sàn thương mại điện tử dành riêng cho sinh viên.<br/>
+              Sàn thương mại điện tử cho người sinh sống tại Việt Nam - Nhật Bản.<br/>
               Mua bán — Trao đổi — Kết nối cộng đồng.
             </p>
           </div>
