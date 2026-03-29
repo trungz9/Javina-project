@@ -13,6 +13,7 @@ import Dashboard     from './pages/Dashboard'
 import ManageProducts from './pages/ManageProducts'
 import ManageOrders  from './pages/ManageOrders'
 import ShopProfile   from './pages/ShopProfile'
+import Footer from './components/Footer'
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
         <Route path="/manage-orders"     element={<ManageOrders />} />
         <Route path="/shop-profile"      element={<ShopProfile />} />
       </Routes>
+      <Footer />
     </BrowserRouter>
   )
 }
