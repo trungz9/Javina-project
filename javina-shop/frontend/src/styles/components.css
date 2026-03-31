@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap');
 /* ══════════════════════════════════
    NAVBAR
 ══════════════════════════════════ */
@@ -138,6 +139,7 @@
 .footer {
   background: linear-gradient(135deg, #FFB7C5 0%, #E8C4D8 100%);
   margin-top: 60px; padding: 40px 20px 24px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 .footer-inner {
   max-width: 1200px; margin: 0 auto;
@@ -147,10 +149,45 @@
   grid-template-columns: repeat(auto-fit, minmax(200px,1fr));
   gap: 32px; margin-bottom: 32px;
 }
+
+.footer-headeer {
+  display: flex; flex-direction: column; align-items: flex-start;
+  }
+
 .footer-logo {
-  font-family: var(--font-jp);
   font-size: 22px; color: #fff; margin-bottom: 8px;
+  display: flex; 
+  align-items: center; 
+  gap: 8px;
+  white-space: nowrap;
 }
+
+.footer-logo-title {
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-weight: 700;
+  font-size: 24px;
+}
+
+.logo-img {
+height: 48px; object-fit: contain;
+}
+
+.footer-sale-ship {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.footer-item-sale-ship {
+  width: 40px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.footer-subsection {
+  margin-bottom: 12px;
+}
+
 .footer-desc { color: rgba(255,255,255,0.85); font-size: 13px; line-height: 1.7; }
 .footer-heading { color: #fff; font-weight: 700; margin-bottom: 12px; font-size: 15px; }
 .footer-link {

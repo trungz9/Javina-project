@@ -19,7 +19,9 @@
   --radius-sm:  8px;
 }
 
-* { font-family: 'Noto Sans JP', sans-serif; }
+* {
+  font-family: 'Noto Sans JP', sans-serif;
+}
 
 body {
   background-color: var(--shiro);
