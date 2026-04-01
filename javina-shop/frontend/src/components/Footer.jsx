@@ -17,6 +17,26 @@ import ship9 from "../assets/ship/9.PNG";
 
 const payImages = [pay1, pay2, pay3, pay4, pay5];
 const shipImages = [ship1, ship2, ship3, ship4, ship5, ship6, ship7, ship8, ship9];
+  const socials = [
+    {
+      name: "Facebook",
+      href: "#",
+      icon: "fab fa-facebook-square",
+      colorVar: "--color-fb",
+    },
+    {
+      name: "Instagram",
+      href: "#",
+      icon: "fab fa-instagram-square",
+      colorVar: "--color-ig",
+    },
+    {
+      name: "LinkedIn",
+      href: "#",
+      icon: "fab fa-linkedin",
+      colorVar: "--color-li",
+    },
+  ];
 
 export default function Footer() {
   return (
@@ -63,15 +83,19 @@ export default function Footer() {
           </div>
           </div>
 
-          <div>
-            <h4 className="footer-heading">Kết nối</h4>
-            <div className="flex gap-12">
-              {['📘','📸','🐦','▶️'].map((icon, i) => (
-                <button key={i} className="footer-social-btn">{icon}</button>
+          <div className="social-block">
+            <h3 className="footer-heading">THEO DÕI CHÚNG TÔI</h3>
+            <ul className="social-list">
+              {socials.map(({ name, href, icon, colorVar }) => (
+                <li key={name}>
+                  <a href={href} className="social-link">
+                    <i className={`social-icon ${icon}`} style={{ color: `var(${colorVar})` }} />
+                  {name}
+                  </a>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
-
         </div>
 
         <div className="footer-bottom">
