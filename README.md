@@ -3,7 +3,7 @@
 
 <div align="center">
 
-![Javina Shop Banner](https://placehold.co/900x300/FFB7C5/ffffff?text=🌸+Javina+Shop+🌸)
+![Javina Shop Banner](https://placehold.co/900x300/FFB7C5/ffffff?text=+Javina+Shop+)
 
 [![Node.js](https://img.shields.io/badge/Node.js-v20+-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org)
 [![React](https://img.shields.io/badge/React-v18+-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev)
