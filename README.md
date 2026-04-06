@@ -425,6 +425,12 @@ curl -X POST http://localhost:5000/api/products \
 
 ---
 
+### Trước khi có dữ liệu
+
+| Trang chính | Footer |
+| ![alt text](image.png) | ![alt text](image-1.png) |
+
+
 ## 🗄️ Database Schema
 
 Dự án sử dụng **21 bảng** chính:
