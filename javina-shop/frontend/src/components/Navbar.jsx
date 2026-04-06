@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import Javina from "../assets/Javina-icon.png";
 
 export default function Navbar() {
   const { isLoggedIn, logout } = useAuth()
@@ -19,7 +20,7 @@ export default function Navbar() {
         {/* Row 1 */}
         <div className="flex gap-16" style={{ alignItems: 'center' }}>
           <Link to="/" className="navbar-logo">
-            <span style={{ fontSize: 24 }}>🌸</span>
+            <img src={Javina} alt="logo" className="logo-img" />
             <div>
               <div className="navbar-logo-title">Javina Shop</div>
               <div className="navbar-logo-sub">ジャビナショップ</div>
