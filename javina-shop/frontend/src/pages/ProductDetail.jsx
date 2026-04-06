@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
+import CurrencyToggle from '../components/CurrencyToggle'
 
 const CONDITION_LABEL = {
   new:'Mới', like_new:'Như mới', used:'Đã dùng', for_rent:'Cho thuê'
@@ -74,22 +75,12 @@ export default function ProductDetail() {
             <h1 className="detail-title">{product.name}</h1>
           </div>
 
-          <div className="flex" style={{ alignItems: 'center' }}>
-            <span className="detail-price">
-              {Number(product.final_price).toLocaleString('vi-VN')}đ
-            </span>
+          <div className="flex" style={{ alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <CurrencyToggle priceVnd={product.final_price} />
             {product.discount_pct > 0 && (
-              <>
-                <span className="detail-price-old">
-                  {Number(product.base_price).toLocaleString('vi-VN')}đ
-                </span>
-                <span className="badge badge-red" style={{ marginLeft: 8 }}>
-                  -{product.discount_pct}%
-                </span>
-              </>
+              <span className="badge badge-red">-{product.discount_pct}%</span>
             )}
           </div>
-
           <div className="detail-info-grid">
             <div>Tình trạng: <strong>{CONDITION_LABEL[product.condition_type]}</strong></div>
             <div>Còn lại: <strong>{product.stock_qty} cái</strong></div>

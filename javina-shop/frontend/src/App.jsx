@@ -14,6 +14,7 @@ import ManageProducts from './pages/ManageProducts'
 import ManageOrders  from './pages/ManageOrders'
 import ShopProfile   from './pages/ShopProfile'
 import Footer from './components/Footer'
+import Currency from './pages/Currency'
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
         <Route path="/manage-products"   element={<ManageProducts />} />
         <Route path="/manage-orders"     element={<ManageOrders />} />
         <Route path="/shop-profile"      element={<ShopProfile />} />
+        <Route path="/currency" element={<Currency />} />
       </Routes>
       <Footer />
     </BrowserRouter>

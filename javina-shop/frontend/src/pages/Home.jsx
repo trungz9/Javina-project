@@ -27,11 +27,14 @@ export default function Home() {
   const [products, setProducts] = useState([])
   const [loading, setLoading]   = useState(true)
   const [banner, setBanner]     = useState(0)
+  const [currency, setCurrency] = useState('VND') 
+  const [rate, setRate]         = useState(null)
   const keyword = searchParams.get('search') || ''
 
   useEffect(() => {
-    const t = setInterval(() => setBanner(b => (b + 1) % BANNERS.length), 3500)
-    return () => clearInterval(t)
+    api.get('/currency/current')
+      .then(res => setRate(res.data.rate))
+      .catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -90,7 +93,35 @@ export default function Home() {
           <h2 className="font-jp text-lg font-bold">
             {keyword ? `🔍 Kết quả: "${keyword}"` : '✨ Sản phẩm mới nhất'}
           </h2>
-          {!keyword && <span className="text-gray text-sm">{products.length} sản phẩm</span>}
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {rate && (
+              <span style={{ fontSize: 12, color: '#aaa' }}>
+                ¥1 = {Number(rate.jpy_to_vnd).toLocaleString('vi-VN')}đ
+              </span>
+            )}
+            <div style={{
+              display: 'flex', borderRadius: 20, overflow: 'hidden',
+              border: '1.5px solid var(--sakura-light)',
+            }}>
+              <button onClick={() => setCurrency('VND')} style={{
+                padding: '6px 16px', border: 'none', cursor: 'pointer',
+                fontSize: 13, fontWeight: 600, transition: 'all 0.2s',
+                background: currency === 'VND' ? 'var(--sakura-dark)' : '#fff',
+                color:      currency === 'VND' ? '#fff' : '#888',
+              }}>
+                🇻🇳 VNĐ
+              </button>
+              <button onClick={() => setCurrency('JPY')} style={{
+                padding: '6px 16px', border: 'none', cursor: 'pointer',
+                fontSize: 13, fontWeight: 600, transition: 'all 0.2s',
+                background: currency === 'JPY' ? '#E8402A' : '#fff',
+                color:      currency === 'JPY' ? '#fff' : '#888',
+              }}>
+                🇯🇵 JPY
+              </button>
+            </div>
+          </div>
         </div>
 
         {loading ? (
@@ -106,7 +137,9 @@ export default function Home() {
           </div>
         ) : (
           <div className="grid-products">
-            {products.map(p => <ProductCard key={p.id} p={p}/>)}
+            {products.map(p => (
+              <ProductCard key={p.id} p={p} currency={currency} rate={rate} />
+            ))}
           </div>
         )}
       </div>
@@ -114,7 +147,16 @@ export default function Home() {
   )
 }
 
-function ProductCard({ p }) {
+function ProductCard({ p, currency, rate }) {
+  const priceVnd = Number(p.final_price)
+  const priceJpy = rate
+    ? Math.round(priceVnd * parseFloat(rate.vnd_to_jpy))
+    : null
+
+  const displayPrice = currency === 'JPY' && priceJpy
+    ? `¥${priceJpy.toLocaleString('ja-JP')}`
+    : `${priceVnd.toLocaleString('vi-VN')}đ`
+
   return (
     <Link to={`/products/${p.id}`} className="product-card">
       <div className="product-card-img-wrap">
@@ -132,12 +174,14 @@ function ProductCard({ p }) {
       <div className="product-card-body">
         <p className="product-card-name">{p.name}</p>
         <div className="flex" style={{ alignItems: 'center' }}>
-          <span className="product-card-price">
-            {Number(p.final_price).toLocaleString('vi-VN')}đ
-          </span>
+          {/* 👈 Giá thay đổi theo nút VND/JPY */}
+          <span className="product-card-price">{displayPrice}</span>
           {p.discount_pct > 0 && (
             <span className="product-card-old-price">
-              {Number(p.base_price).toLocaleString('vi-VN')}đ
+              {currency === 'JPY' && rate
+                ? `¥${Math.round(Number(p.base_price) * parseFloat(rate.vnd_to_jpy)).toLocaleString()}`
+                : `${Number(p.base_price).toLocaleString('vi-VN')}đ`
+              }
             </span>
           )}
         </div>

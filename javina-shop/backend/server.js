@@ -11,6 +11,8 @@ import shopRoute from './src/routes/shop.route.js';
 import addressRoute from './src/routes/address.route.js';
 import helmet    from 'helmet';
 import rateLimit from 'express-rate-limit';
+import currencyRoute from './src/routes/currency.route.js';
+import { startCurrencyJob } from './src/jobs/currency.job.js';
 
 dotenv.config();
 
@@ -25,6 +27,8 @@ app.use('/api/categories', categoryRoute);
 app.use('/api/cart',   cartRoute);
 app.use('/api/orders', orderRoute);
 app.use('/api/addresses', addressRoute);
+app.use('/api/currency', currencyRoute);
+startCurrencyJob();
 app.use(helmet());
 
 app.use(rateLimit({

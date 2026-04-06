@@ -71,7 +71,9 @@ export default function Navbar() {
             </button>
           ))}
         </div>
-
+      <Link to="/currency" className="navbar-icon-btn">
+        <span className="icon">💱</span>Tỷ giá
+      </Link>
       </div>
     </nav>
   )
