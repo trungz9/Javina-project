@@ -4,11 +4,11 @@
 --  Encoding: utf8mb4
 -- ============================================================
 
-CREATE DATABASE IF NOT EXISTS minishopee
+CREATE DATABASE IF NOT EXISTS `javina-shop`
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
 
-USE minishopee;
+USE `javina-shop`;
 
 -- ============================================================
 -- 1. USERS - Người dùng (sinh viên mua/bán)
@@ -35,7 +35,7 @@ CREATE TABLE users (
     INDEX idx_phone   (phone),
     INDEX idx_university (university)
 ) ENGINE=InnoDB;
-
+ 
 -- ============================================================
 -- 2. USER_ADDRESSES - Địa chỉ giao hàng
 -- ============================================================
@@ -557,3 +557,26 @@ BEGIN
 END$$
 
 DELIMITER ;
+
+-- ============================================================
+-- 21. CURRENCY_RATES - Lịch sử tỷ giá VND/JPY
+-- ============================================================
+CREATE TABLE IF NOT EXISTS currency_rates (
+    id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    vnd_to_jpy  DECIMAL(10,6)   NOT NULL,   -- 1 VND = ? JPY
+    jpy_to_vnd  DECIMAL(10,4)   NOT NULL,   -- 1 JPY = ? VND
+    source      VARCHAR(50)     DEFAULT 'exchangerate-api',
+    recorded_at DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    INDEX idx_recorded (recorded_at)
+) ENGINE=InnoDB;
+
+-- Tự động xoá dữ liệu cũ hơn 7 ngày
+CREATE EVENT IF NOT EXISTS evt_clean_currency
+ON SCHEDULE EVERY 1 DAY
+STARTS NOW()
+DO
+  DELETE FROM currency_rates
+  WHERE recorded_at < DATE_SUB(NOW(), INTERVAL 7 DAY);
+  
+SELECT * FROM currency_rates;
