@@ -97,21 +97,15 @@ export const createProduct = async (req, res) => {
       is_negotiable = 0
     } = req.body;
 
-    // 1. Kiểm tra thông tin bắt buộc
     if (!name || !category_id || !base_price || !stock_qty) {
       return res.status(400).json({ message: 'Vui lòng điền đầy đủ thông tin sản phẩm!' });
     }
 
-    // 2. Kiểm tra user có shop chưa — nếu chưa thì tự tạo shop
-    let [shops] = await db.query(
-      'SELECT id FROM shops WHERE user_id = ?', [req.userId]
-    );
+    let [shops] = await db.query('SELECT id FROM shops WHERE user_id = ?', [req.userId]);
 
     let shopId;
     if (shops.length === 0) {
-      const [userRow] = await db.query(
-        'SELECT username FROM users WHERE id = ?', [req.userId]
-      );
+      const [userRow] = await db.query('SELECT username FROM users WHERE id = ?', [req.userId]);
       const shopName = `Shop của ${userRow[0].username}`;
       const slug     = `shop-${req.userId}-${Date.now()}`;
       const [newShop] = await db.query(
@@ -123,10 +117,8 @@ export const createProduct = async (req, res) => {
       shopId = shops[0].id;
     }
 
-    // 3. Tạo slug cho sản phẩm
     const slug = `${name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
 
-    // 4. Lưu sản phẩm
     const [result] = await db.query(`
       INSERT INTO products
         (shop_id, category_id, name, slug, description,
@@ -135,9 +127,26 @@ export const createProduct = async (req, res) => {
     `, [shopId, category_id, name, slug, description,
         base_price, discount_pct, stock_qty, condition_type, is_negotiable]);
 
+    const productId = result.insertId;
+
+    // ✅ THÊM: lưu ảnh vào bảng product_images
+    if (req.files && req.files.length > 0) {
+      const imageValues = req.files.map((file, index) => [
+        productId,
+        `/uploads/${file.filename}`,
+        index === 0 ? 1 : 0, // ảnh đầu tiên là ảnh bìa (is_cover = 1)
+        index                // sort_order
+      ]);
+
+      await db.query(
+        'INSERT INTO product_images (product_id, image_url, is_cover, sort_order) VALUES ?',
+        [imageValues]
+      );
+    }
+
     res.status(201).json({
       message: 'Đăng sản phẩm thành công!',
-      productId: result.insertId
+      productId
     });
 
   } catch (err) {
@@ -145,7 +154,6 @@ export const createProduct = async (req, res) => {
     res.status(500).json({ message: 'Lỗi server!' });
   }
 };
-
 // ── CẬP NHẬT SẢN PHẨM ───────────────────────────
 export const updateProduct = async (req, res) => {
   try {

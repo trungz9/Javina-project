@@ -13,8 +13,8 @@ import helmet    from 'helmet';
 import rateLimit from 'express-rate-limit';
 import currencyRoute from './src/routes/currency.route.js';
 import { startCurrencyJob } from './src/jobs/currency.job.js';
-
-dotenv.config();
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
 const app = express();
 
@@ -59,3 +59,8 @@ app.get('/api/test-db', async (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server: http://localhost:${PORT}`));
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+app.use('/uploads', express.static(join(__dirname, 'uploads')));
+dotenv.config();
