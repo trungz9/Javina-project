@@ -111,6 +111,7 @@ CREATE TABLE shops (
 -- ============================================================
 -- 5. PRODUCTS - Sản phẩm
 -- ============================================================
+
 CREATE TABLE products (
     id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     shop_id         BIGINT UNSIGNED NOT NULL,
@@ -235,7 +236,7 @@ CREATE TABLE coupons (
 -- ============================================================
 CREATE TABLE orders (
     id              BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    order_code      VARCHAR(20)     NOT NULL UNIQUE,       -- VD: MS-20240913-0001
+    order_code      VARCHAR(50)     NOT NULL UNIQUE,       -- VD: MS-20240913-0001
     buyer_id        BIGINT UNSIGNED NOT NULL,
     shop_id         BIGINT UNSIGNED NOT NULL,
     address_id      BIGINT UNSIGNED NOT NULL,
@@ -570,6 +571,14 @@ CREATE TABLE IF NOT EXISTS currency_rates (
 
     INDEX idx_recorded (recorded_at)
 ) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS view_history (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  user_id    INT NOT NULL,
+  product_id INT NOT NULL,
+  viewed_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_view (user_id, product_id)
+);
 
 -- Tự động xoá dữ liệu cũ hơn 7 ngày
 CREATE EVENT IF NOT EXISTS evt_clean_currency
