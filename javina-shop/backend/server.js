@@ -15,6 +15,8 @@ import currencyRoute from './src/routes/currency.route.js';
 import { startCurrencyJob } from './src/jobs/currency.job.js';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { trie } from './src/utils/Trie.js'
+import interactionRoute from './src/routes/interaction.route.js'
 
 const app = express();
 
@@ -30,6 +32,7 @@ app.use('/api/addresses', addressRoute);
 app.use('/api/currency', currencyRoute);
 startCurrencyJob();
 app.use(helmet());
+app.use('/api/interactions', interactionRoute)
 
 app.use(rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -61,6 +64,22 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server: http://localhost:${PORT}`));
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+const loadTrieFromDB = async () => {
+  try {
+    const [products] = await db.query(
+      'SELECT id, name FROM products WHERE is_active = 1'
+    )
+    for (const p of products) {
+      trie.insert(p.name, p.id)
+    }
+    console.log(`✅ Trie loaded: ${products.length} sản phẩm`)
+  } catch (err) {
+    console.error('❌ Trie load lỗi:', err.message)
+  }
+}
+
+loadTrieFromDB()
 
 app.use('/uploads', express.static(join(__dirname, 'uploads')));
 dotenv.config();

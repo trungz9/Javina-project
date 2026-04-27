@@ -8,6 +8,8 @@ import {
   createProduct, updateProduct, deleteProduct
 } from '../controllers/product.controller.js';
 import protect from '../middlewares/auth.middleware.js';
+import { searchAutocomplete } from '../controllers/product.controller.js'
+import { getRecommendedProducts } from '../controllers/product.controller.js'
 
 // ✅ THÊM: config multer
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -34,10 +36,13 @@ const upload = multer({
 
 const router = express.Router();
 
+router.get('/autocomplete', searchAutocomplete)
+router.get('/:id', getProductById)
 router.get('/',     getProducts);
 router.get('/:id',  getProductById);
 router.post('/',    protect, upload.array('images', 5), createProduct); // ✅ thêm upload vào đây
 router.put('/:id',  protect, updateProduct);
 router.delete('/:id', protect, deleteProduct);
+router.get('/recommendations', protect, getRecommendedProducts)
 
 export default router;

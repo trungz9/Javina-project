@@ -20,6 +20,7 @@ export default function ProductDetail() {
   const [added, setAdded]       = useState(false)
 
   useEffect(() => {
+    if (!isLoggedIn) return
     api.get(`/products/${id}`)
       .then(res => {
         setProduct(res.data.product)
@@ -28,7 +29,8 @@ export default function ProductDetail() {
       })
       .catch(() => setError('Không tìm thấy sản phẩm!'))
       .finally(() => setLoading(false))
-  }, [id])
+      api.post(`/interactions/view/${id}`).catch(() => {})
+  }, [id, isLoggedIn])
 
   const handleAddToCart = async () => {
     if (!isLoggedIn) return navigate('/login')

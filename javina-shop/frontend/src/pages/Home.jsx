@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import api from '../api/axios'
+import SearchBar from '../components/SearchBar'
+import RecommendedProducts from '../components/RecommendedProducts'
 
 const BANNERS = [
   { bg: 'linear-gradient(135deg,#FFB7C5,#FFD4DF)', emoji: '🌸', title: 'Hàng Nhật chính hãng',       sub: 'Giá sinh viên — Chất lượng Nhật Bản'        },
@@ -49,6 +51,8 @@ export default function Home() {
 
   return (
     <div>
+      <SearchBar />            {/* Autocomplete */}
+      <RecommendedProducts />
       {/* Hero Banner */}
       {!keyword && (
         <div className="hero" style={{ background: b.bg }}>

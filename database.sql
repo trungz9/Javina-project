@@ -135,7 +135,8 @@ CREATE TABLE products (
     approved_at     DATETIME,                              -- Duyệt bởi admin
     created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
+    cluster_id      INT             DEFAULT NULL,
+    
     FOREIGN KEY (shop_id)     REFERENCES shops(id)      ON DELETE CASCADE,
     FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE RESTRICT,
     INDEX idx_shop       (shop_id),
@@ -573,12 +574,16 @@ CREATE TABLE IF NOT EXISTS currency_rates (
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS view_history (
-  id         INT AUTO_INCREMENT PRIMARY KEY,
-  user_id    INT NOT NULL,
-  product_id INT NOT NULL,
-  viewed_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE KEY uq_view (user_id, product_id)
+  id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id     BIGINT UNSIGNED NOT NULL,   -- khớp với users.id (BIGINT UN)
+  product_id  BIGINT UNSIGNED NOT NULL,   -- khớp với products.id (BIGINT UN)
+  view_count  INT DEFAULT 1,
+  last_viewed TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_view (user_id, product_id),
+  FOREIGN KEY (user_id)    REFERENCES users(id)    ON DELETE CASCADE,
+  FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
+
 
 -- Tự động xoá dữ liệu cũ hơn 7 ngày
 CREATE EVENT IF NOT EXISTS evt_clean_currency
@@ -587,5 +592,16 @@ STARTS NOW()
 DO
   DELETE FROM currency_rates
   WHERE recorded_at < DATE_SUB(NOW(), INTERVAL 7 DAY);
+  
+CREATE TABLE IF NOT EXISTS user_interactions (
+  id         BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id    BIGINT UNSIGNED NOT NULL,   -- khớp với users.id (BIGINT UN)
+  product_id BIGINT UNSIGNED NOT NULL,   -- khớp với products.id (BIGINT UN)
+  score      FLOAT DEFAULT 0,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_interaction (user_id, product_id),
+  FOREIGN KEY (user_id)    REFERENCES users(id)    ON DELETE CASCADE,
+  FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+);  
   
 SELECT * FROM currency_rates;

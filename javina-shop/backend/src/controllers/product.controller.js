@@ -3,6 +3,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: join(__dirname, '../../.env') });
+import { getRecommendations } from '../utils/collaborative.js'
 
 import db from '../../config/db.js';
 
@@ -143,6 +144,9 @@ export const createProduct = async (req, res) => {
         [imageValues]
       );
     }
+    
+    const { trie } = await import('../utils/Trie.js')
+    trie.insert(name, productId)
 
     res.status(201).json({
       message: 'Đăng sản phẩm thành công!',
@@ -211,3 +215,112 @@ export const deleteProduct = async (req, res) => {
     res.status(500).json({ message: 'Lỗi server!' });
   }
 };
+// ── AUTOCOMPLETE bằng TRIE ───────────────────────────
+export const searchAutocomplete = async (req, res) => {
+  try {
+    const { q } = req.query
+    if (!q || q.trim().length < 1) {
+      return res.json({ suggestions: [] })
+    }
+
+    // 1. Tìm productId trong Trie — O(m) với m = độ dài prefix
+    const { trie } = await import('../utils/Trie.js')
+    const productIds = trie.search(q.trim(), 8)
+
+    if (productIds.length === 0) {
+      return res.json({ suggestions: [] })
+    }
+
+    // 2. Lấy thông tin sản phẩm từ DB
+    const placeholders = productIds.map(() => '?').join(',')
+    const [products] = await db.query(
+      `SELECT id, name, base_price, 
+              (SELECT image_url FROM product_images 
+               WHERE product_id = p.id AND is_cover = 1 LIMIT 1) AS cover_image
+       FROM products p
+       WHERE id IN (${placeholders}) AND is_active = 1`,
+      productIds
+    )
+
+    res.json({ suggestions: products })
+
+  } catch (err) {
+    console.error('autocomplete error:', err)
+    res.status(500).json({ suggestions: [] })
+  }
+}
+
+// ── GỢI Ý SẢN PHẨM CHO USER ─────────────────────────
+export const getRecommendedProducts = async (req, res) => {
+  try {
+    const userId = req.userId
+
+    // 1. Lấy dữ liệu từ user_interactions
+    const [interactions] = await db.query(`
+      SELECT user_id, product_id, score
+      FROM user_interactions
+    `)
+
+    // 2. Chuyển thành { userId: { productId: score } }
+    const allScores = {}
+    for (const row of interactions) {
+      if (!allScores[row.user_id]) allScores[row.user_id] = {}
+      allScores[row.user_id][row.product_id] = row.score
+    }
+
+    // 3. Fallback: chưa có dữ liệu → trả về sản phẩm phổ biến
+    if (!allScores[userId]) {
+      const [popular] = await db.query(`
+        SELECT p.id, p.name, p.base_price,
+               COALESCE(AVG(r.rating), 0) AS avg_rating,
+               (SELECT image_url FROM product_images
+                WHERE product_id = p.id AND is_cover = 1 LIMIT 1) AS cover_image
+        FROM products p
+        LEFT JOIN reviews r ON r.product_id = p.id
+        WHERE p.is_active = 1
+        GROUP BY p.id
+        ORDER BY avg_rating DESC
+        LIMIT 8
+      `)
+      return res.json({ products: popular, method: 'popular' })
+    }
+
+    // 4. Chạy Collaborative Filtering
+    const recommendedIds = getRecommendations(userId, allScores)
+
+    // 5. Fallback: không tìm được gợi ý → trả về phổ biến
+    if (!recommendedIds || recommendedIds.length === 0) {
+      const [popular] = await db.query(`
+        SELECT p.id, p.name, p.base_price,
+               COALESCE(AVG(r.rating), 0) AS avg_rating,
+               (SELECT image_url FROM product_images
+                WHERE product_id = p.id AND is_cover = 1 LIMIT 1) AS cover_image
+        FROM products p
+        LEFT JOIN reviews r ON r.product_id = p.id
+        WHERE p.is_active = 1
+        GROUP BY p.id
+        ORDER BY avg_rating DESC
+        LIMIT 8
+      `)
+      return res.json({ products: popular, method: 'popular' })
+    }
+
+    // 6. Lấy thông tin sản phẩm từ DB
+    const placeholders = recommendedIds.map(() => '?').join(',')
+    const [products] = await db.query(`
+      SELECT p.id, p.name, p.base_price,
+             c.name AS category_name,
+             (SELECT image_url FROM product_images
+              WHERE product_id = p.id AND is_cover = 1 LIMIT 1) AS cover_image
+      FROM products p
+      JOIN categories c ON c.id = p.category_id
+      WHERE p.id IN (${placeholders}) AND p.is_active = 1
+    `, recommendedIds)
+
+    res.json({ products, method: 'collaborative' })
+
+  } catch (err) {
+    console.error('recommendation error:', err)
+    res.status(500).json({ message: 'Lỗi server!' })
+  }
+}
