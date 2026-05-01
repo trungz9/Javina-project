@@ -324,3 +324,41 @@ export const getRecommendedProducts = async (req, res) => {
     res.status(500).json({ message: 'Lỗi server!' })
   }
 }
+
+// ── GỢI Ý THEO CLUSTER (Cold Start) ──────────────────
+export const getClusterRecommendations = async (req, res) => {
+  try {
+    const { productId } = req.params
+
+    // Lấy cluster_id của sản phẩm đang xem
+    const [[product]] = await db.query(
+      'SELECT cluster_id, id FROM products WHERE id=?',
+      [productId]
+    )
+
+    if (!product || product.cluster_id === null) {
+      return res.json({ products: [], method: 'cluster' })
+    }
+
+    // Lấy sản phẩm cùng cluster
+    const [products] = await db.query(`
+      SELECT p.id, p.name, p.base_price, p.final_price,
+             c.name AS category_name,
+             (SELECT image_url FROM product_images
+              WHERE product_id = p.id AND is_cover = 1 LIMIT 1) AS cover_image
+      FROM products p
+      JOIN categories c ON c.id = p.category_id
+      WHERE p.cluster_id = ?
+        AND p.id != ?
+        AND p.is_active = 1
+      ORDER BY p.rating_avg DESC
+      LIMIT 8
+    `, [product.cluster_id, productId])
+
+    res.json({ products, method: 'cluster' })
+
+  } catch (err) {
+    console.error('cluster recommendation error:', err)
+    res.status(500).json({ message: 'Lỗi server!' })
+  }
+}
