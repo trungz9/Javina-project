@@ -1,3 +1,6 @@
+import dotenv from 'dotenv'
+dotenv.config()
+
 import db from './config/db.js'
 import bcrypt from 'bcryptjs'
 
@@ -433,6 +436,36 @@ console.log(`   ✅ ${reviewCount} reviews`)
   console.log(`✅ ${viewCount} views`)
 
   console.log('🎉 DONE!')
+  console.log('🤝 Creating user_interactions...')
+let interactionCount = 0
+
+// Lấy tất cả view_history
+const [views] = await db.query('SELECT user_id, product_id, view_count FROM view_history')
+
+for (const v of views) {
+  const score = Math.min(v.view_count, 5) * 1  // mỗi lượt xem = 1đ, tối đa 5đ
+
+  await db.query(`
+    INSERT INTO user_interactions (user_id, product_id, score)
+    VALUES (?, ?, ?)
+    ON DUPLICATE KEY UPDATE score = ?, updated_at = NOW()
+  `, [v.user_id, v.product_id, score, score])
+
+  interactionCount++
+}
+
+// Cộng thêm điểm từ reviews
+const [reviewRows] = await db.query('SELECT user_id, product_id, rating FROM reviews')
+
+for (const r of reviewRows) {
+  await db.query(`
+    INSERT INTO user_interactions (user_id, product_id, score)
+    VALUES (?, ?, ?)
+    ON DUPLICATE KEY UPDATE score = score + ?, updated_at = NOW()
+  `, [r.user_id, r.product_id, r.rating, r.rating])
+}
+
+console.log(`✅ ${interactionCount} interactions`)
   process.exit(0)
 }
 

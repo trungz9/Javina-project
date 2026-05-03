@@ -38,13 +38,14 @@ const upload = multer({
 const router = express.Router();
 
 router.get('/autocomplete', searchAutocomplete)
+router.get('/recommendations', protect, getRecommendedProducts)
+
 router.get('/:id', getProductById)
 router.get('/',     getProducts);
 router.get('/:id',  getProductById);
 router.post('/',    protect, upload.array('images', 5), createProduct); // ✅ thêm upload vào đây
 router.put('/:id',  protect, updateProduct);
 router.delete('/:id', protect, deleteProduct);
-router.get('/recommendations', protect, getRecommendedProducts)
 router.get('/:productId/similar', getClusterRecommendations)
 
 export default router;
