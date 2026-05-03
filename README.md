@@ -23,12 +23,14 @@
 
 - [Giới thiệu](#-giới-thiệu)
 - [Tính năng chính](#-tính-năng-chính)
+- [Thuật toán nổi bật](#-thuật-toán-nổi-bật)
 - [Công nghệ sử dụng](#-công-nghệ-sử-dụng)
 - [Cấu trúc dự án](#-cấu-trúc-dự-án)
 - [Yêu cầu hệ thống](#-yêu-cầu-hệ-thống)
 - [Hướng dẫn cài đặt](#-hướng-dẫn-cài-đặt)
 - [Cấu hình môi trường](#-cấu-hình-môi-trường)
 - [Chạy dự án](#-chạy-dự-án)
+- [Seed dữ liệu](#-seed-dữ-liệu)
 - [API Documentation](#-api-documentation)
 - [Giao diện](#-giao-diện)
 - [Đóng góp](#-đóng-góp)
@@ -46,6 +48,8 @@ Khác với các sàn TMĐT thông thường như Shopee hay Lazada, Javina Shop
 - 💰 **Giá sinh viên** — Hàng cũ, sách giáo trình, đồ dùng học tập giá rẻ
 - 🇯🇵 **Hàng Việt - Nhật** — Hỗ trợ xem giá theo VNĐ và JPY với biểu đồ tỷ giá thời gian thực
 - 📊 **Dự đoán tỷ giá** — Thuật toán Linear Regression dự đoán xu hướng 1-2 ngày tới
+- 🤖 **Gợi ý thông minh** — Hệ thống gợi ý sản phẩm 3 tầng (Cluster → View History → Collaborative Filtering)
+- 🔍 **Tìm kiếm nhanh** — Autocomplete bằng cấu trúc dữ liệu Trie, hỗ trợ tiếng Việt không dấu
 
 ---
 
@@ -57,16 +61,22 @@ Khác với các sàn TMĐT thông thường như Shopee hay Lazada, Javina Shop
 - Quản lý địa chỉ giao hàng (nhà, ký túc xá, trường...)
 
 ### 🛍️ Mua sắm
-- Tìm kiếm và lọc sản phẩm theo danh mục
+- **Autocomplete tìm kiếm** — Gợi ý sản phẩm ngay khi gõ, hỗ trợ không dấu tiếng Việt
+- Tìm kiếm và lọc sản phẩm theo danh mục, giá, tình trạng
 - Xem chi tiết sản phẩm với gallery ảnh
 - **Đổi giá VNĐ ⇄ JPY** ngay trên trang sản phẩm
 - Thêm vào giỏ hàng, điều chỉnh số lượng
 - Đặt hàng COD (thanh toán khi nhận hàng)
 - Theo dõi trạng thái đơn hàng
 
+### 🤖 Hệ thống gợi ý sản phẩm (3 tầng)
+- **Tầng 1 — Cold Start (Text Clustering):** Gợi ý sản phẩm tương tự dựa trên mô tả, dành cho user mới chưa có lịch sử
+- **Tầng 2 — View History:** Theo dõi hành vi xem/mua/đánh giá để tính điểm tổng hợp
+- **Tầng 3 — Collaborative Filtering:** Gợi ý cá nhân hóa dựa trên Cosine Similarity giữa các user
+
 ### 🏪 Người bán
 - Tạo gian hàng tự động khi đăng sản phẩm
-- Đăng bán sản phẩm với nhiều danh mục
+- Đăng bán sản phẩm với upload ảnh (tối đa 5 ảnh)
 - Dashboard thống kê doanh thu, đơn hàng
 - Quản lý đơn hàng và cập nhật trạng thái
 - Top sản phẩm bán chạy
@@ -74,9 +84,67 @@ Khác với các sàn TMĐT thông thường như Shopee hay Lazada, Javina Shop
 ### 💱 Tỷ giá VNĐ / JPY
 - Biểu đồ tỷ giá lịch sử **7 ngày**
 - Lọc theo: **3 tiếng / 12 tiếng / 1 ngày / 3 ngày / 7 ngày**
-- Cập nhật tự động mỗi **30 phút** (1,500 req/tháng)
+- Cập nhật tự động mỗi **30 phút**
 - **Dự đoán 1-2 ngày tới** bằng thuật toán Linear Regression
 - Nút đổi tiền tệ trên trang chủ và giỏ hàng
+
+---
+
+## 🧠 Thuật toán nổi bật
+
+### 1. Autocomplete bằng Trie
+
+Cấu trúc dữ liệu Trie được dùng để gợi ý sản phẩm khi người dùng gõ từ khóa.
+
+```
+Độ phức tạp tìm kiếm: O(m) — m = độ dài prefix
+So với MySQL LIKE:    O(n×m) — n = số sản phẩm
+```
+
+Tính năng đặc biệt:
+- Hỗ trợ tiếng Việt không dấu (`sach` tìm được `Sách Giải Tích`)
+- Sắp xếp kết quả theo rating trung bình
+- Cập nhật realtime khi có sản phẩm mới
+- Debounce 300ms để giảm tải server
+
+### 2. Gợi ý sản phẩm — Collaborative Filtering
+
+Dùng **Cosine Similarity** để tìm người dùng tương tự:
+
+```
+similarity(A,B) = (A · B) / (|A| × |B|)
+```
+
+Điểm tương tác tổng hợp:
+| Hành vi | Điểm |
+|---|---|
+| Xem sản phẩm | +1 (tối đa 5 lần) |
+| Thêm vào giỏ | +2 |
+| Mua hàng | +3 |
+| Đánh giá sao | +rating (1-5) |
+
+### 3. Cold Start — Text Clustering
+
+Giải quyết bài toán Cold Start Problem bằng TF-IDF + K-Means:
+- Phân tích mô tả sản phẩm tiếng Việt
+- Phân cụm thành 6 nhóm tương ứng 6 danh mục
+- Gợi ý sản phẩm cùng cluster cho user mới
+
+### 4. Luồng gợi ý 3 tầng
+
+```
+User mới (chưa có lịch sử)
+        ↓
+Tầng 1: CLUSTER — "Sản phẩm tương tự về mô tả"
+        ↓
+User xem vài sản phẩm
+        ↓
+Tầng 2: VIEW HISTORY — "Sản phẩm cùng nhóm bạn hay xem"
+        ↓
+User có đủ dữ liệu tương tác
+        ↓
+Tầng 3: COLLABORATIVE FILTERING — "Người giống bạn đã thích gì"
+```
 
 ---
 
@@ -90,7 +158,10 @@ Khác với các sàn TMĐT thông thường như Shopee hay Lazada, Javina Shop
 | MySQL2 | v3+ | Database driver |
 | JWT | - | Authentication |
 | bcryptjs | - | Password hashing |
+| multer | - | Upload ảnh sản phẩm |
 | node-cron | - | Scheduled jobs |
+| helmet | - | Bảo mật HTTP headers |
+| express-rate-limit | - | Chống brute force |
 | axios | - | HTTP client |
 
 ### Frontend
@@ -101,6 +172,12 @@ Khác với các sàn TMĐT thông thường như Shopee hay Lazada, Javina Shop
 | React Router DOM | v6+ | Client-side routing |
 | Axios | - | API calls |
 | Recharts | - | Biểu đồ tỷ giá |
+
+### AI / Machine Learning
+| Công nghệ | Mục đích |
+|---|---|
+| Python + scikit-learn | TF-IDF + K-Means clustering |
+| mysql-connector-python | Kết nối DB từ Python |
 
 ### Database & Tools
 | Công nghệ | Mục đích |
@@ -117,20 +194,22 @@ Khác với các sàn TMĐT thông thường như Shopee hay Lazada, Javina Shop
 ```
 javina-shop/
 │
-├── 📂 backend/                  # Node.js + Express API
+├── 📂 backend/
 │   ├── 📂 config/
-│   │   └── db.js                # Kết nối MySQL
+│   │   └── db.js                    # Kết nối MySQL
 │   ├── 📂 src/
-│   │   ├── 📂 controllers/      # Xử lý logic
+│   │   ├── 📂 controllers/
 │   │   │   ├── auth.controller.js
-│   │   │   ├── product.controller.js
+│   │   │   ├── product.controller.js  # Bao gồm: getRecommendedProducts, searchAutocomplete, getClusterRecommendations
+│   │   │   ├── interaction.controller.js  # ✅ Theo dõi hành vi user
 │   │   │   ├── cart.controller.js
 │   │   │   ├── order.controller.js
 │   │   │   ├── shop.controller.js
 │   │   │   └── currency.controller.js
-│   │   ├── 📂 routes/           # Định nghĩa API routes
+│   │   ├── 📂 routes/
 │   │   │   ├── auth.route.js
-│   │   │   ├── product.route.js
+│   │   │   ├── product.route.js       # Bao gồm: /autocomplete, /recommendations, /:id/similar
+│   │   │   ├── interaction.route.js   # ✅ Route theo dõi hành vi
 │   │   │   ├── cart.route.js
 │   │   │   ├── order.route.js
 │   │   │   ├── shop.route.js
@@ -138,30 +217,41 @@ javina-shop/
 │   │   │   ├── address.route.js
 │   │   │   └── currency.route.js
 │   │   ├── 📂 middlewares/
-│   │   │   └── auth.middleware.js  # JWT verification
+│   │   │   └── auth.middleware.js
+│   │   ├── 📂 utils/
+│   │   │   ├── Trie.js               # ✅ Cấu trúc dữ liệu Trie + rating score
+│   │   │   ├── collaborative.js      # ✅ Thuật toán Collaborative Filtering
+│   │   │   └── scoring.js            # ✅ Tính điểm tổng hợp hành vi
 │   │   └── 📂 jobs/
-│   │       └── currency.job.js     # Cron job tỷ giá
-│   ├── .env                     # Biến môi trường (không commit)
-│   ├── .env.example             # Mẫu biến môi trường
-│   └── server.js                # Entry point
+│   │       └── currency.job.js
+│   ├── 📂 clustering/
+│   │   ├── cluster_products.py       # ✅ Script Python phân cụm sản phẩm
+│   │   └── model.pkl                 # ✅ Model TF-IDF + K-Means đã train
+│   ├── 📂 uploads/                   # ✅ Thư mục lưu ảnh sản phẩm
+│   ├── seed.js                       # ✅ Script tạo dữ liệu mẫu
+│   ├── .env
+│   ├── .env.example
+│   └── server.js
 │
-├── 📂 frontend/                 # React + Vite
+├── 📂 frontend/
 │   ├── 📂 src/
 │   │   ├── 📂 api/
-│   │   │   └── axios.js         # Axios instance + interceptors
+│   │   │   └── axios.js
 │   │   ├── 📂 components/
 │   │   │   ├── Navbar.jsx
 │   │   │   ├── Footer.jsx
+│   │   │   ├── SearchBar.jsx          # ✅ Autocomplete Trie
+│   │   │   ├── RecommendedProducts.jsx # ✅ Gợi ý sản phẩm
 │   │   │   ├── CurrencyChart.jsx
 │   │   │   └── CurrencyToggle.jsx
 │   │   ├── 📂 context/
-│   │   │   └── AuthContext.jsx  # Global auth state
+│   │   │   └── AuthContext.jsx
 │   │   ├── 📂 pages/
 │   │   │   ├── Home.jsx
 │   │   │   ├── Login.jsx
 │   │   │   ├── Register.jsx
-│   │   │   ├── ProductDetail.jsx
-│   │   │   ├── CreateProduct.jsx
+│   │   │   ├── ProductDetail.jsx      # Tích hợp trackView + gợi ý cùng cluster
+│   │   │   ├── CreateProduct.jsx      # Upload ảnh tối đa 5 ảnh
 │   │   │   ├── Cart.jsx
 │   │   │   ├── Checkout.jsx
 │   │   │   ├── OrderSuccess.jsx
@@ -171,14 +261,14 @@ javina-shop/
 │   │   │   ├── ManageProducts.jsx
 │   │   │   └── Currency.jsx
 │   │   ├── 📂 styles/
-│   │   │   ├── global.css       # Variables + reset
-│   │   │   ├── components.css   # Navbar, Footer, Card...
-│   │   │   └── pages.css        # Page-specific styles
+│   │   │   ├── global.css
+│   │   │   ├── components.css
+│   │   │   └── pages.css
 │   │   ├── App.jsx
 │   │   └── main.jsx
 │   └── vite.config.js
 │
-├── 📄 minishopee_schema.sql     # Database schema đầy đủ
+├── 📄 database.sql                    # Database schema đầy đủ
 └── 📄 README.md
 ```
 
@@ -186,13 +276,12 @@ javina-shop/
 
 ## 💻 Yêu cầu hệ thống
 
-Trước khi cài đặt, đảm bảo máy tính đã có:
-
 | Phần mềm | Phiên bản tối thiểu | Kiểm tra |
 |---|---|---|
 | Node.js | v18.0+ | `node -v` |
 | npm | v9.0+ | `npm -v` |
 | MySQL | v8.0+ | MySQL Workbench |
+| Python | v3.8+ | `python --version` |
 | Git | Bất kỳ | `git -v` |
 
 ---
@@ -208,20 +297,45 @@ cd javina-shop
 
 ### Bước 2 — Tạo Database MySQL
 
-Mở **MySQL Workbench**, kết nối vào local instance, rồi chạy:
+Mở **MySQL Workbench**, kết nối vào local instance, chạy file schema:
 
 ```sql
--- Chạy toàn bộ file schema
-SOURCE /đường/dẫn/tới/javina-shop/minishopee_schema.sql;
+SOURCE /đường/dẫn/tới/javina-shop/database.sql;
 ```
 
-Hoặc vào **File → Open SQL Script** → chọn file `minishopee_schema.sql` → bấm ⚡ Execute
-
-Sau đó thêm bảng tỷ giá:
+Sau đó thêm các bảng mới cho hệ thống gợi ý:
 
 ```sql
 USE `javina-shop`;
 
+-- Bảng lưu lịch sử xem sản phẩm
+CREATE TABLE IF NOT EXISTS view_history (
+  id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id     BIGINT UNSIGNED NOT NULL,
+  product_id  BIGINT UNSIGNED NOT NULL,
+  view_count  INT DEFAULT 1,
+  last_viewed TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_view (user_id, product_id),
+  FOREIGN KEY (user_id)    REFERENCES users(id)    ON DELETE CASCADE,
+  FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+);
+
+-- Bảng lưu điểm tổng hợp hành vi (dùng cho Collaborative Filtering)
+CREATE TABLE IF NOT EXISTS user_interactions (
+  id         BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id    BIGINT UNSIGNED NOT NULL,
+  product_id BIGINT UNSIGNED NOT NULL,
+  score      FLOAT DEFAULT 0,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_interaction (user_id, product_id),
+  FOREIGN KEY (user_id)    REFERENCES users(id)    ON DELETE CASCADE,
+  FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+);
+
+-- Thêm cột cluster_id cho Text Clustering
+ALTER TABLE products ADD COLUMN IF NOT EXISTS cluster_id INT DEFAULT NULL;
+
+-- Bảng tỷ giá
 CREATE TABLE IF NOT EXISTS currency_rates (
     id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     vnd_to_jpy  DECIMAL(10,6)   NOT NULL,
@@ -246,9 +360,24 @@ cd ../frontend
 npm install
 ```
 
-### Bước 5 — Đăng ký API tỷ giá (miễn phí)
+### Bước 5 — Cài đặt Python (cho Text Clustering)
 
-1. Truy cập [https://app.exchangerate-api.com/sign-in](https://app.exchangerate-api.com/sign-in)
+```bash
+cd ../backend/clustering
+python -m venv .venv
+
+# Windows
+.venv\Scripts\activate
+
+# Mac/Linux
+source .venv/bin/activate
+
+pip install scikit-learn mysql-connector-python
+```
+
+### Bước 6 — Đăng ký API tỷ giá (miễn phí)
+
+1. Truy cập [https://app.exchangerate-api.com](https://app.exchangerate-api.com)
 2. Đăng ký tài khoản miễn phí
 3. Copy **API Key** từ Dashboard
 
@@ -257,13 +386,6 @@ npm install
 ## ⚙️ Cấu hình môi trường
 
 ### Backend — Tạo file `backend/.env`
-
-```bash
-# Copy từ file mẫu
-cp backend/.env.example backend/.env
-```
-
-Mở file `backend/.env` và điền thông tin:
 
 ```env
 # ── Database ──────────────────────────────
@@ -275,16 +397,14 @@ DB_NAME=javina-shop
 
 # ── Authentication ─────────────────────────
 JWT_SECRET=javina_secret_key_2024_change_this
+JWT_EXPIRES_IN=7d
 
 # ── Server ────────────────────────────────
 PORT=5000
 
 # ── Currency API ──────────────────────────
-# Lấy tại: https://app.exchangerate-api.com
 EXCHANGE_RATE_API_KEY=your_api_key_here
 ```
-
-> ⚠️ **Lưu ý bảo mật:** Không bao giờ commit file `.env` lên GitHub! File này đã được thêm vào `.gitignore`
 
 ### Frontend — Tạo file `frontend/.env`
 
@@ -292,13 +412,15 @@ EXCHANGE_RATE_API_KEY=your_api_key_here
 VITE_API_URL=http://localhost:5000/api
 ```
 
+> ⚠️ **Lưu ý:** Không bao giờ commit file `.env` lên GitHub!
+
 ---
 
 ## ▶️ Chạy dự án
 
-Mở **2 terminal riêng biệt** trong VSCode (`Ctrl + `` ` ```)
+Mở **2 terminal riêng biệt** trong VSCode
 
-### Terminal 1 — Chạy Backend
+### Terminal 1 — Backend
 
 ```bash
 cd backend
@@ -309,11 +431,11 @@ Kết quả mong đợi:
 ```
 🚀 Server: http://localhost:5000
 ✅ MySQL connected!
+✅ Trie loaded: 90 sản phẩm
 💱 Currency job started
-✅ [08:30:00] 1 JPY = 168.45 VND
 ```
 
-### Terminal 2 — Chạy Frontend
+### Terminal 2 — Frontend
 
 ```bash
 cd frontend
@@ -326,15 +448,53 @@ Kết quả mong đợi:
   ➜  Local:   http://localhost:5173/
 ```
 
-### Truy cập ứng dụng
+---
 
-| Địa chỉ | Mô tả |
-|---|---|
-| http://localhost:5173 | Trang chủ website |
-| http://localhost:5173/login | Đăng nhập |
-| http://localhost:5173/register | Đăng ký |
-| http://localhost:5173/currency | Biểu đồ tỷ giá |
-| http://localhost:5000 | Backend API |
+## 🌱 Seed dữ liệu
+
+Tạo dữ liệu mẫu để test hệ thống gợi ý:
+
+```bash
+cd backend
+node seed.js
+```
+
+Script sẽ tạo:
+- 10 users với preference riêng theo danh mục
+- 10 shops (mỗi user 1 shop)
+- 90 sản phẩm (15 sản phẩm × 6 danh mục) với mô tả đầy đủ
+- Orders và order_items
+- Reviews theo preference (user thích danh mục → rating cao hơn)
+- View history
+- User interactions (điểm tổng hợp cho Collaborative Filtering)
+
+**Tài khoản test:**
+| Email | Password | Đặc điểm |
+|---|---|---|
+| an@test.com | 123456 | Thích sách, học tập |
+| emily@test.com | 123456 | Thích điện tử |
+| giang@test.com | 123456 | Thích xe cộ |
+
+### Phân cụm sản phẩm (Text Clustering)
+
+Sau khi seed xong, chạy Python để phân cụm:
+
+```bash
+cd backend/clustering
+.venv\Scripts\activate   # Windows
+python cluster_products.py
+```
+
+Kết quả:
+```
+=== Top terms per cluster ===
+Cluster 1: sách, học, sinh viên, giáo trình, tập...
+Cluster 2: laptop, màn hình, tai nghe, bluetooth...
+Cluster 3: áo, quần, giày, vải, mặc...
+...
+✅ Gán cluster cho 90 sản phẩm!
+✅ Lưu model.pkl!
+```
 
 ---
 
@@ -351,10 +511,19 @@ Kết quả mong đợi:
 | Method | Endpoint | Mô tả | Auth |
 |---|---|---|---|
 | GET | `/api/products` | Danh sách sản phẩm | ❌ |
+| GET | `/api/products/autocomplete?q=sach` | Gợi ý tìm kiếm (Trie) | ❌ |
+| GET | `/api/products/recommendations` | Gợi ý cá nhân hóa | ✅ |
 | GET | `/api/products/:id` | Chi tiết sản phẩm | ❌ |
-| POST | `/api/products` | Tạo sản phẩm mới | ✅ |
+| GET | `/api/products/:id/similar` | Sản phẩm cùng cluster | ❌ |
+| POST | `/api/products` | Tạo sản phẩm + upload ảnh | ✅ |
 | PUT | `/api/products/:id` | Cập nhật sản phẩm | ✅ |
 | DELETE | `/api/products/:id` | Xoá sản phẩm | ✅ |
+
+### Theo dõi hành vi (User Interactions)
+| Method | Endpoint | Mô tả | Auth |
+|---|---|---|---|
+| POST | `/api/interactions/view/:id` | Ghi lại lượt xem sản phẩm | ✅ |
+| GET | `/api/interactions/history` | Lịch sử xem của user | ✅ |
 
 ### Giỏ hàng
 | Method | Endpoint | Mô tả | Auth |
@@ -375,11 +544,11 @@ Kết quả mong đợi:
 ### Shop & Dashboard
 | Method | Endpoint | Mô tả | Auth |
 |---|---|---|---|
-| GET | `/api/shops/my` | Thông tin shop | ✅ |
-| PUT | `/api/shops/my` | Cập nhật shop | ✅ |
-| GET | `/api/shops/my/orders` | Đơn hàng của shop | ✅ |
-| PUT | `/api/shops/my/orders/:id` | Cập nhật trạng thái | ✅ |
-| GET | `/api/shops/my/stats` | Thống kê doanh thu | ✅ |
+| GET | `/api/shop/my` | Thông tin shop | ✅ |
+| PUT | `/api/shop/my` | Cập nhật shop | ✅ |
+| GET | `/api/shop/my/orders` | Đơn hàng của shop | ✅ |
+| PUT | `/api/shop/my/orders/:id` | Cập nhật trạng thái | ✅ |
+| GET | `/api/shop/my/stats` | Thống kê doanh thu | ✅ |
 
 ### Tỷ giá
 | Method | Endpoint | Mô tả | Auth |
@@ -389,25 +558,105 @@ Kết quả mong đợi:
 | GET | `/api/currency/predict` | Dự đoán 1-2 ngày | ❌ |
 | GET | `/api/currency/convert?amount=100&from=VND` | Đổi tiền | ❌ |
 
-### Ví dụ gọi API
+---
 
+## 🗄️ Database Schema
+
+Dự án sử dụng **23 bảng** chính:
+
+```
+users               → Tài khoản người dùng
+user_addresses      → Địa chỉ giao hàng
+categories          → Danh mục sản phẩm (6 danh mục)
+shops               → Gian hàng người bán
+products            → Sản phẩm (có cluster_id cho Text Clustering)
+product_images      → Hình ảnh sản phẩm (tối đa 5 ảnh)
+product_variants    → Biến thể (màu, size)
+wishlists           → Danh sách yêu thích
+cart_items          → Giỏ hàng
+coupons             → Mã giảm giá
+orders              → Đơn hàng
+order_items         → Chi tiết đơn hàng
+payments            → Thanh toán
+reviews             → Đánh giá sản phẩm (dùng cho CF)
+view_history        → ✅ Lịch sử xem sản phẩm
+user_interactions   → ✅ Điểm tổng hợp hành vi (dùng cho CF)
+conversations       → Hội thoại
+messages            → Tin nhắn
+notifications       → Thông báo
+banners             → Banner quảng cáo
+shipping_logs       → Lịch sử vận chuyển
+reports             → Báo cáo vi phạm
+currency_rates      → Lịch sử tỷ giá JPY/VND
+```
+
+---
+
+## ❗ Xử lý lỗi thường gặp
+
+### ❌ MySQL connected không hiện
 ```bash
-# Đăng ký
-curl -X POST http://localhost:5000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"username":"sv01","email":"sv01@gmail.com","password":"123456","full_name":"Nguyễn Văn A"}'
+# Kiểm tra thông tin trong .env
+DB_HOST=127.0.0.1   # không dùng "localhost"
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=đúng_mật_khẩu
+```
 
-# Lấy danh sách sản phẩm
-curl http://localhost:5000/api/products
+### ❌ ModuleNotFoundError: No module named 'mysql'
+```bash
+# Cần kích hoạt virtual environment trước
+cd backend/clustering
+.venv\Scripts\activate    # Windows
+pip install mysql-connector-python scikit-learn
+```
 
-# Lấy tỷ giá hiện tại
-curl http://localhost:5000/api/currency/current
+### ❌ Trie loaded: 0 sản phẩm
+```bash
+# Chưa có sản phẩm trong DB — chạy seed trước
+cd backend
+node seed.js
+```
 
-# Tạo sản phẩm (cần Bearer token)
-curl -X POST http://localhost:5000/api/products \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Sách Giải Tích","category_id":1,"base_price":50000,"stock_qty":3}'
+### ❌ method luôn là "popular" không ra "collaborative"
+```bash
+# User đang dùng chưa có đủ data trong user_interactions
+# Đăng nhập bằng tài khoản seed:
+# Email: an@test.com / Password: 123456
+```
+
+### ❌ 404 Not Found khi gọi /recommendations
+```bash
+# Route bị conflict với /:id — kiểm tra thứ tự trong product.route.js
+# Route cụ thể phải đặt TRƯỚC route có tham số:
+router.get('/autocomplete', ...)      # ← đặt trước
+router.get('/recommendations', ...)  # ← đặt trước
+router.get('/:id', ...)              # ← đặt sau
+```
+
+### ❌ Token không hợp lệ hoặc đã hết hạn
+```bash
+# 1. Đăng nhập lại để lấy token mới
+# 2. Kiểm tra Authorization header: Bearer <token> (không có dấu "")
+# 3. Tăng thời hạn trong .env: JWT_EXPIRES_IN=7d
+```
+
+### ❌ Table 'cart' doesn't exist
+```bash
+# Tên bảng đúng là cart_items, không phải cart
+# Kiểm tra lại trong interaction.controller.js
+```
+
+### ❌ CORS error trên frontend
+```bash
+# Kiểm tra trong server.js:
+app.use(cors({ origin: 'http://localhost:5173' }));
+```
+
+### ❌ Biểu đồ tỷ giá trống
+```bash
+# Kiểm tra EXCHANGE_RATE_API_KEY trong .env
+# Đợi 30 phút để cron job chạy lần đầu
 ```
 
 ---
@@ -416,98 +665,18 @@ curl -X POST http://localhost:5000/api/products \
 
 | Trang | Mô tả |
 |---|---|
-| 🏠 Trang chủ | Hero banner, danh mục, lưới sản phẩm, nút đổi VNĐ/JPY |
+| 🏠 Trang chủ | Hero banner, autocomplete search, gợi ý sản phẩm, nút đổi VNĐ/JPY |
 | 🔐 Đăng nhập/Đăng ký | Giao diện pastel phong cách Nhật Bản |
-| 📦 Chi tiết sản phẩm | Gallery ảnh, thông tin, nút đổi tiền tệ |
+| 📦 Chi tiết sản phẩm | Gallery ảnh, sản phẩm tương tự cùng cluster, nút đổi tiền tệ |
 | 🛒 Giỏ hàng | Danh sách sản phẩm, tổng tiền VNĐ/JPY |
 | 💱 Tỷ giá | Biểu đồ lịch sử, dự đoán Linear Regression |
 | 🏪 Dashboard | Thống kê shop, top sản phẩm, quản lý đơn |
 
 ---
 
-### Trước khi có dữ liệu
-
-| Trang chính | Footer | 
-|---|---|
-| ![alt text](image.png) | ![alt text](image-1.png) |
-
-
-## 🗄️ Database Schema
-
-Dự án sử dụng **21 bảng** chính:
-
-```
-users              → Tài khoản người dùng
-user_addresses     → Địa chỉ giao hàng
-categories         → Danh mục sản phẩm (9 danh mục mặc định)
-shops              → Gian hàng người bán
-products           → Sản phẩm
-product_images     → Hình ảnh sản phẩm
-product_variants   → Biến thể (màu, size)
-wishlists          → Danh sách yêu thích
-cart_items         → Giỏ hàng
-coupons            → Mã giảm giá
-orders             → Đơn hàng
-order_items        → Chi tiết đơn hàng
-payments           → Thanh toán
-reviews            → Đánh giá sản phẩm
-conversations      → Hội thoại
-messages           → Tin nhắn
-notifications      → Thông báo
-banners            → Banner quảng cáo
-shipping_logs      → Lịch sử vận chuyển
-reports            → Báo cáo vi phạm
-currency_rates     → Lịch sử tỷ giá JPY/VND
-```
-
----
-
-## ❗ Xử lý lỗi thường gặp
-
-### ❌ `MySQL connected` không hiện
-```bash
-# Kiểm tra MySQL đang chạy chưa
-# Mở MySQL Workbench → kết nối thử
-
-# Kiểm tra thông tin trong .env
-DB_HOST=127.0.0.1   # không dùng "localhost"
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=đúng_mật_khẩu
-```
-
-### ❌ `authRoute is not defined`
-```bash
-# Thiếu dòng import trong server.js
-import authRoute from './src/routes/auth.route.js';
-# Lưu ý: phải có .js ở cuối đường dẫn
-```
-
-### ❌ `Table doesn't exist`
-```bash
-# Chưa chạy file SQL — mở MySQL Workbench và chạy:
-SOURCE /path/to/minishopee_schema.sql;
-```
-
-### ❌ Biểu đồ tỷ giá trống
-```bash
-# Kiểm tra EXCHANGE_RATE_API_KEY trong .env
-# Đợi 30 phút sau khi khởi động server để job chạy lần đầu
-# Kiểm tra terminal có dòng: ✅ 1 JPY = ... VND
-```
-
-### ❌ CORS error trên frontend
-```bash
-# Kiểm tra trong server.js:
-app.use(cors({ origin: 'http://localhost:5173' }));
-# Đảm bảo frontend đang chạy đúng cổng 5173
-```
-
----
-
 ## 🤝 Đóng góp
 
-Mọi đóng góp đều được chào đón! Để đóng góp:
+Mọi đóng góp đều được chào đón!
 
 ```bash
 # 1. Fork dự án
